@@ -17,3 +17,5 @@ debug
 Makefile
 go.sum
 .DS_Store
+.vscode
+__debug_bin

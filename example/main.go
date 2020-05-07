@@ -17,7 +17,13 @@ func (h *Handler) Init() {
 // GetUserInfo get some path
 // get /api/user/info
 func (h *Handler) GetUserInfo(ctx *web.Ctx) {
-	ctx.Send("Path is /api/user/info")
+	ctx.ViewData("data", map[string]interface{}{
+		"title": "i love china.",
+	})
+
+	if err := ctx.View("default/main.html"); err != nil {
+		ctx.Send(err)
+	}
 }
 
 // GetAuthorize  some path
@@ -40,7 +46,11 @@ func (h *Handler) PutParams(ctx *web.Ctx) {
 
 // main.go
 func main() {
-	app := web.New(&web.Options{Debug: true})
+	app := web.New(&web.Options{
+		Debug: true,
+	})
+
+	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout.html").Reload(true))
 
 	app.Use(new(Handler))
 	if err := app.Serve(80); err != nil {

@@ -56,6 +56,7 @@ func acquireCtx(fctx *fasthttp.RequestCtx) *Ctx {
 	ctx.path = getString(fctx.URI().Path())
 	ctx.method = getString(fctx.Request.Header.Method())
 	ctx.RequestCtx = fctx
+	fctx.SetUserValue("viewData", make(map[string]interface{}, 0))
 	return ctx
 }
 func releaseCtx(ctx *Ctx) {
@@ -64,6 +65,34 @@ func releaseCtx(ctx *Ctx) {
 	ctx.RequestCtx = nil
 	ctx.err = nil
 	poolCtx.Put(ctx)
+}
+
+// ViewData 全局变量
+func (c *Ctx) ViewData(k string, v interface{}) error {
+	if data, ok := c.UserValue("viewData").(map[string]interface{}); ok {
+		data[k] = v
+		c.SetUserValue("viewData", data)
+		return nil
+	}
+	return fmt.Errorf("not found %s", k)
+}
+
+// View 显示模版
+func (c *Ctx) View(filename string, optionalViewModel ...interface{}) error {
+	c.Set(HeaderContentType, MIMETextHTML)
+
+	var binding interface{}
+	if len(optionalViewModel) > 0 {
+		binding = optionalViewModel[0]
+	} else {
+		binding = c.UserValue("viewData")
+	}
+
+	err := c.Core.View(c.RequestCtx.Response.BodyWriter(), filename, "", binding)
+	if err != nil {
+		c.SendStatus(500)
+	}
+	return err
 }
 
 // Vars 本地数据

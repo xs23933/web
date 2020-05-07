@@ -3,6 +3,7 @@ package web
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -35,6 +36,7 @@ type Options struct {
 	IdleTimeout        time.Duration
 	MaxRequestBodySize int
 	Debug              bool
+	ViewEngine         ViewEngine
 }
 
 // Core core class
@@ -54,6 +56,24 @@ func New(opts ...*Options) *Core {
 
 	}
 	return c
+}
+
+// RegView 注册模版引擎
+func (c *Core) RegView(viewEngine ViewEngine) {
+	c.ViewEngine = viewEngine
+}
+
+// View executes and writes the result of a template file to the writer.
+//
+// First parameter is the writer to write the parsed template.
+// Second parameter is the relative, to templates directory, template filename, including extension.
+// Third parameter is the layout, can be empty string.
+// Forth parameter is the bindable data to the template, can be nil.
+//
+// Use context.View to render templates to the client instead.
+// Returns an error on failure, otherwise nil.
+func (c *Core) View(writer io.Writer, filename string, layout string, bind interface{}) error {
+	return c.ViewEngine.ExecuteWriter(writer, filename, layout, bind)
 }
 
 // Use registers a middleware route.
@@ -182,6 +202,26 @@ func (c *Core) pushMethod(method, path string, handlers ...func(*Ctx)) {
 	}
 }
 
+// Build Initialize
+func (c *Core) Build() error {
+	c.Server = c.newServer()
+
+	// i18n load TODO:
+
+	// for _, s := range []string{"./views", "./templates", "./web/views"} {
+	// 	if _, err := os.Stat(s); os.IsNotExist(err) {
+	// 		continue
+	// 	}
+	// 	c.RegView(HTML(s, ".html"))
+	// 	break
+	// }
+
+	if err := c.ViewEngine.Load(); err != nil {
+		log.Fatalf("View builder %v", err)
+	}
+	return nil
+}
+
 // Serve 启动
 func (c *Core) Serve(address interface{}, tlsopt ...*tls.Config) error {
 	addr, ok := address.(string)
@@ -195,7 +235,10 @@ func (c *Core) Serve(address interface{}, tlsopt ...*tls.Config) error {
 	if !strings.Contains(addr, ":") {
 		addr = ":" + addr
 	}
-	c.Server = c.newServer()
+
+	if err := c.Build(); err != nil {
+		panic(err)
+	}
 
 	var ln net.Listener
 	var err error
@@ -271,7 +314,7 @@ func (c *Core) handler(fctx *fasthttp.RequestCtx) {
 	c.nextRoute(ctx)
 	if c.Debug {
 		d := time.Now().Sub(start).String()
-		log.Printf("%s \t%s\t %d %s\n", Green(ctx.method), ctx.path, ctx.Response.StatusCode(), Yellow(d))
+		log.Printf("%s\t%s\t %d %s\n", Green(ctx.method), ctx.path, ctx.Response.StatusCode(), Yellow(d))
 	}
 }
 
