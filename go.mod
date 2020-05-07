@@ -1,4 +1,4 @@
-module web
+module github.com/xs23933/web
 
 go 1.14
 
