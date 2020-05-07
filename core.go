@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -119,31 +118,31 @@ func (c *Core) buildHands(hand handle) {
 		switch {
 		case strings.HasPrefix(name, "get"):
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
-				name = path.Join(prefix, strings.TrimLeft(name, "get"))
+				name = fixURI(prefix, name, "get")
 				c.pushMethod("GET", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("GET"), name)
 			}
 		case strings.HasPrefix(name, "post"):
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
-				name = path.Join(prefix, strings.TrimLeft(name, "post"))
+				name = fixURI(prefix, name, "post")
 				c.pushMethod("POST", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("POST"), name)
 			}
 		case strings.HasPrefix(name, "put"):
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
-				name = path.Join(prefix, strings.TrimLeft(name, "put"))
+				name = fixURI(prefix, name, "put")
 				c.pushMethod("PUT", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("PUT"), name)
 			}
 		case strings.HasPrefix(name, "delete"):
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
-				name = path.Join(prefix, strings.TrimLeft(name, "delete"))
+				name = fixURI(prefix, name, "delete")
 				c.pushMethod("DELETE", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("DELETE"), name)
 			}
 		case strings.HasPrefix(name, "all"):
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
-				name = path.Join(prefix, strings.TrimLeft(name, "all"))
+				name = fixURI(prefix, name, "all")
 				c.pushMethod("ALL", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("ALL"), name)
 			}

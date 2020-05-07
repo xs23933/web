@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -196,6 +197,14 @@ var statusMessages = map[int]string{
 	508: "Loop Detected",
 	510: "Not Extended",
 	511: "Network Authentication Required",
+}
+
+func fixURI(pre, src, tag string) string {
+	uri := path.Join(pre, strings.TrimLeft(src, tag))
+	if len(uri) == 0 {
+		uri = "/"
+	}
+	return uri
 }
 
 // 名称替换
