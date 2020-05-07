@@ -1,7 +1,7 @@
 package main
 
 import (
-	"web"
+	"github.com/xs23933/web"
 )
 
 //Handler .go
@@ -50,7 +50,7 @@ func main() {
 		Debug: true,
 	})
 
-	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout.html").Reload(true))
+	// app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout.html").Reload(true))
 
 	app.Use(new(Handler))
 	if err := app.Serve(80); err != nil {

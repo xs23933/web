@@ -206,18 +206,20 @@ func (c *Core) pushMethod(method, path string, handlers ...func(*Ctx)) {
 func (c *Core) Build() error {
 	c.Server = c.newServer()
 
-	// i18n load TODO:
+	if c.ViewEngine == nil {
+		for _, s := range []string{"./views", "./templates", "./web/views"} {
+			if _, err := os.Stat(s); os.IsNotExist(err) {
+				continue
+			}
+			c.RegView(Handlebars(s, ".html"))
+			break
+		}
+	}
 
-	// for _, s := range []string{"./views", "./templates", "./web/views"} {
-	// 	if _, err := os.Stat(s); os.IsNotExist(err) {
-	// 		continue
-	// 	}
-	// 	c.RegView(HTML(s, ".html"))
-	// 	break
-	// }
-
-	if err := c.ViewEngine.Load(); err != nil {
-		log.Fatalf("View builder %v", err)
+	if c.ViewEngine != nil {
+		if err := c.ViewEngine.Load(); err != nil {
+			log.Fatalf("View builder %v", err)
+		}
 	}
 	return nil
 }
