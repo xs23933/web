@@ -51,7 +51,7 @@ func main() {
 	})
 
 	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout.html").Reload(true))
-
+	// app.Static("/assets", "./assets")
 	app.Use(new(Handler))
 	if err := app.Serve(80); err != nil {
 		panic(err)

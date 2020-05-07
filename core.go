@@ -45,6 +45,14 @@ type Core struct {
 	routes []*Route
 }
 
+// Static struct
+type Static struct {
+	Compress  bool
+	ByteRange bool
+	Browse    bool
+	Index     string
+}
+
 // New new core
 func New(opts ...*Options) *Core {
 	c := new(Core)
@@ -73,6 +81,98 @@ func (c *Core) RegView(viewEngine ViewEngine) {
 // Returns an error on failure, otherwise nil.
 func (c *Core) View(writer io.Writer, filename string, layout string, bind interface{}) error {
 	return c.ViewEngine.ExecuteWriter(writer, filename, layout, bind)
+}
+
+func (c *Core) regStatic(prefix, root string, config ...Static) {
+	if prefix == "" {
+		prefix = "/"
+	}
+
+	if prefix[0] != '/' && prefix[0] != '*' {
+		prefix = "/" + prefix
+	}
+	// Match anything
+	var wildcard = false
+	if prefix == "*" || prefix == "/*" {
+		wildcard = true
+		prefix = "/"
+	}
+	prefix = strings.ToLower(prefix)
+	// For security we want to restrict to the current work directory.
+	if len(root) == 0 {
+		root = "."
+	}
+	// Strip trailing slashes from the root path
+	if len(root) > 0 && root[len(root)-1] == '/' {
+		root = root[:len(root)-1]
+	}
+	// isSlash ?
+	var isSlash = prefix == "/"
+	if strings.Contains(prefix, "*") {
+		wildcard = true
+		prefix = strings.Split(prefix, "*")[0]
+	}
+	var stripper = len(prefix)
+	if isSlash {
+		stripper = 0
+	}
+	// Fileserver settings
+	fs := &fasthttp.FS{
+		Root:                 root,
+		GenerateIndexPages:   false,
+		AcceptByteRange:      false,
+		Compress:             false,
+		CompressedFileSuffix: ".tar.gz",
+		CacheDuration:        10 * time.Second,
+		IndexNames:           []string{"index.html"},
+		PathRewrite:          fasthttp.NewPathPrefixStripper(stripper),
+		PathNotFound: func(ctx *fasthttp.RequestCtx) {
+			ctx.Response.SetStatusCode(404)
+			ctx.Response.SetBodyString("Not Found")
+		},
+	}
+	// Set config if provided
+	if len(config) > 0 {
+		fs.Compress = config[0].Compress
+		fs.AcceptByteRange = config[0].ByteRange
+		fs.GenerateIndexPages = config[0].Browse
+		if config[0].Index != "" {
+			fs.IndexNames = []string{config[0].Index}
+		}
+	}
+	fileHandler := fs.NewRequestHandler()
+	c.routes = append(c.routes, &Route{
+		isMiddleware: true,
+		isSlash:      isSlash,
+		Method:       "*",
+		Path:         prefix,
+		Handler: func(ctx *Ctx) {
+			// Only handle GET & HEAD methods
+			if ctx.method == "GET" || ctx.method == "HEAD" {
+				// Do stuff
+				if wildcard {
+					ctx.Request.SetRequestURI(prefix)
+				}
+				// Serve file
+				fileHandler(ctx.RequestCtx)
+
+				// Finish request if found and not forbidden
+				status := ctx.Response.StatusCode()
+				if status != 404 && status != 403 {
+					return
+				}
+				// Reset response
+				ctx.Response.Reset()
+			}
+			ctx.Next()
+		},
+	})
+}
+
+// Static registers a new route with path prefix to serve static files from the provided root directory.
+func (c *Core) Static(prefix, root string, config ...Static) *Core {
+	c.regStatic(prefix, root, config...)
+	return c
 }
 
 // Use registers a middleware route.
