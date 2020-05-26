@@ -292,6 +292,23 @@ func (c *Ctx) JSON(data interface{}) error {
 	return nil
 }
 
+// ToJSON 返回js数据处理错误
+func (c *Ctx) ToJSON(data interface{}, err error) error {
+	if err != nil {
+		return c.JSON(map[string]interface{}{
+			"status": false,
+			"data":   data,
+			"msg":    err.Error(),
+		})
+	}
+
+	return c.JSON(map[string]interface{}{
+		"status": true,
+		"data":   data,
+		"msg":    "success",
+	})
+}
+
 // JSONP 发送jsonp 数据
 func (c *Ctx) JSONP(data interface{}, callback ...string) error {
 	raw, err := json.Marshal(&data)

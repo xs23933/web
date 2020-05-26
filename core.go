@@ -250,6 +250,9 @@ func (c *Core) buildHands(hand handle) {
 	}
 	fmt.Println("+ ------------------------------ +")
 
+	c.pushMethod("GET", "/check", func(ctx *Ctx) {
+		ctx.Send("ok")
+	})
 }
 
 func (c *Core) pushMethod(method, path string, handlers ...func(*Ctx)) {
