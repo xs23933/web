@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/xs23933/web"
 )
 
@@ -30,6 +32,13 @@ func (h *Handler) Get(ctx *web.Ctx) {
 // get /api/authorize
 func (h *Handler) GetAuthorize(ctx *web.Ctx) {
 	ctx.Send("get /api/authorize")
+}
+
+func (h *Handler) GetToJSON(ctx *web.Ctx) {
+	ctx.ToJSON(map[string]interface{}{
+		"hello": "world",
+		"value": 10,
+	}, fmt.Errorf("err"))
 }
 
 // PostParam PostParam
