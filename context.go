@@ -411,6 +411,9 @@ func (c *Ctx) Body() string {
 func (c *Ctx) ReadBody(out interface{}) error {
 	ctype := getString(c.Request.Header.ContentType())
 	switch {
+	// application/json text/plain
+	case strings.HasPrefix(ctype, MIMEApplicationJSON), strings.HasPrefix(ctype, MIMETextPlain):
+		return json.Unmarshal(c.Request.Body(), out)
 	// application/xml text/xml
 	case strings.HasPrefix(ctype, MIMEApplicationXML), strings.HasPrefix(ctype, MIMETextXML):
 		return xml.Unmarshal(c.Request.Body(), out)
@@ -427,9 +430,6 @@ func (c *Ctx) ReadBody(out interface{}) error {
 			data[getString(k)] = append(data[getString(k)], getString(v))
 		})
 		return schemaDecoderQuery.Decode(out, data)
-	// application/json, text/json, text/plain
-	default:
-		return json.Unmarshal(c.Request.Body(), out)
 	}
-	// return fmt.Errorf("ReadBody: can not support content-type:%v", ctype)
+	return fmt.Errorf("ReadBody: can not support content-type:%v", ctype)
 }
