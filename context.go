@@ -411,8 +411,8 @@ func (c *Ctx) Body() string {
 func (c *Ctx) ReadBody(out interface{}) error {
 	ctype := getString(c.Request.Header.ContentType())
 	switch {
-	// application/json
-	case strings.HasPrefix(ctype, MIMEApplicationJSON):
+	// application/json text/plain
+	case strings.HasPrefix(ctype, MIMEApplicationJSON), strings.HasPrefix(ctype, MIMETextPlain):
 		return json.Unmarshal(c.Request.Body(), out)
 	// application/xml text/xml
 	case strings.HasPrefix(ctype, MIMEApplicationXML), strings.HasPrefix(ctype, MIMETextXML):
