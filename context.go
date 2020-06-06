@@ -269,6 +269,10 @@ func (c Ctx) Host() string {
 
 // IP returns the remote IP address of the request.
 func (c *Ctx) IP() string {
+	ip := c.Get("X-Real-IP")
+	if ip != "" {
+		return ip
+	}
 	return c.RemoteIP().String()
 }
 
@@ -297,14 +301,14 @@ func (c *Ctx) ToJSON(data interface{}, err error) error {
 	if err != nil {
 		return c.JSON(map[string]interface{}{
 			"status": false,
-			"data":   data,
+			"result": data,
 			"msg":    err.Error(),
 		})
 	}
 
 	return c.JSON(map[string]interface{}{
 		"status": true,
-		"data":   data,
+		"result": data,
 		"msg":    "success",
 	})
 }
