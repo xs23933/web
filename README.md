@@ -7,6 +7,9 @@
 * easy run
 * support go module go.mod
 
+more doc 
+
+https://godoc.org/github.com/xs23933/web
 
 examples
 
