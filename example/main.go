@@ -13,11 +13,12 @@ type Handler struct {
 
 // Init Init
 func (h *Handler) Init() {
-	// h.SetPrefix("/api") // Add prefix
+	h.SetPrefix("/api") // Add prefix
 }
 
 // Get get some path
-// get /api/user/info
+// get /api/
+// concat path /api + / .
 func (h *Handler) Get(ctx *web.Ctx) {
 	ctx.ViewData("data", map[string]interface{}{
 		"title": "i love china.",

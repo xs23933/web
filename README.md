@@ -18,7 +18,7 @@ import (
 	"github.com/xs23933/web"
 )
 
-//handler.go
+// handler.go
 type Handler struct {
     web.Handler
 }
@@ -28,23 +28,31 @@ func (h *Handler) Init() {
 	h.SetPrefix("/api") // Add prefix
 }
 
-func (h *Handler) Get_(ctx *web.Ctx) {
-    ctx.Send("Hello world")
+// Get get method
+// get /api/
+func (Handler) Get(c *web.Ctx) {
+    c.Send("Hello world")
 }
 
-func(h *Handler) GetParams(ctx *web.Ctx) {
-    ctx.Send("Param: ", ctx.Params("param"))
+// GetParams Get something params
+//  get /api/:param?
+func (Handler) GetParams(c *web.Ctx) {
+    c.Send("Param: ", c.Params("param"))
 }
 
 // PostParam PostParam
-func (h *Handler) PostParam(ctx *web.Ctx) {
-	ctx.Send("Param ", ctx.Params("param"))
+func (Handler) PostParam(c *web.Ctx) {
+    form := make(map[string]interface{}, 0)  // or some struct
+    c.ReadBody(&form)
+	c.Send("Param ", c.Params("param"))
 }
 
 // PutParams 可选参数
 // put /:param?
-func (h *Handler) PutParams(ctx *web.Ctx) {
-	ctx.Send("Param? ", ctx.Params("param"))
+func (Handler) PutParams(c *web.Ctx) {
+    form := make(map[string]interface{}, 0)  // or some struct
+    c.ReadBody(&form)
+	c.Send("Param? ", c.Params("param"))
 }
 
 // main.go
@@ -62,8 +70,8 @@ func main(){
 go run example/main.go
 
 + ---- Auto register router ---- +
-| GET	/api/authorize
-| GET	/api/user/info
+| GET	/api/
+| GET	/api/:param?
 | POST	/api/:param
 | PUT	/api/:param?
 + ------------------------------ +
