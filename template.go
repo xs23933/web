@@ -16,6 +16,7 @@ import (
 type ViewEngine interface {
 	Load() error
 	ExecuteWriter(io.Writer, string, string, interface{}) error
+	LoadTpls(map[string]string) error
 }
 
 // HandlebarsEngine 引擎
@@ -113,6 +114,23 @@ func (s *HandlebarsEngine) Load() error {
 	}
 	s.directory = dir
 	return s.loadDirectory()
+}
+
+// LoadTpls 载入数据库中的模版数据
+// if exists ignore.
+func (s *HandlebarsEngine) LoadTpls(tpls map[string]string) error {
+	for name, contents := range tpls {
+		if _, ok := s.templateCache[name]; !ok {
+			tmpl, err := raymond.Parse(contents)
+			if err != nil {
+				return err
+			}
+			// push new data to template
+			s.templateCache[name] = tmpl
+		}
+	}
+
+	return nil
 }
 
 func (s *HandlebarsEngine) loadDirectory() error {

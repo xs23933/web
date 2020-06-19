@@ -20,9 +20,7 @@ func (h *Handler) Init() {
 // get /api/
 // concat path /api + / .
 func (h *Handler) Get(ctx *web.Ctx) {
-	ctx.ViewData("data", map[string]interface{}{
-		"title": "i love china.",
-	})
+	ctx.Vars("title", "i love china.")
 
 	if err := ctx.View("default/main.html"); err != nil {
 		ctx.Send(err)
@@ -59,9 +57,7 @@ type Handle struct {
 }
 
 func (Handle) Get(c *web.Ctx) {
-	c.ViewData("data", map[string]interface{}{
-		"title": "i love china",
-	})
+	c.Vars("title", "i love china")
 
 	fmt.Println(c.Domain([]string{"xs.com.cn"}))
 

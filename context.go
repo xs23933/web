@@ -52,20 +52,21 @@ var (
 )
 
 func assignCtx(fctx *fasthttp.RequestCtx) *Ctx {
-	ctx := poolCtx.Get().(*Ctx)
-	ctx.index = -1
-	ctx.path = getString(fctx.URI().Path())
-	ctx.method = getString(fctx.Request.Header.Method())
-	ctx.RequestCtx = fctx
-	fctx.SetUserValue("viewData", make(map[string]interface{}, 0))
-	return ctx
+	c := poolCtx.Get().(*Ctx)
+	c.index = -1
+	c.path = getString(fctx.URI().Path())
+	c.method = getString(fctx.Request.Header.Method())
+	c.RequestCtx = fctx
+
+	return c
 }
-func releaseCtx(ctx *Ctx) {
-	ctx.Route = nil
-	ctx.values = nil
-	ctx.RequestCtx = nil
-	ctx.err = nil
-	poolCtx.Put(ctx)
+
+func releaseCtx(c *Ctx) {
+	c.Route = nil
+	c.values = nil
+	c.RequestCtx = nil
+	c.err = nil
+	poolCtx.Put(c)
 }
 
 // Method contains a string corresponding to the HTTP method of the request: GET, POST, PUT and so on.
@@ -82,14 +83,9 @@ func (ctx *Ctx) Method(override ...string) string {
 	return ctx.method
 }
 
-// ViewData 全局变量
-func (c *Ctx) ViewData(k string, v interface{}) error {
-	if data, ok := c.UserValue("viewData").(map[string]interface{}); ok {
-		data[k] = v
-		c.SetUserValue("viewData", data)
-		return nil
-	}
-	return fmt.Errorf("not found %s", k)
+// LoadTpls 装载数据库中的模版引擎.
+func (c *Ctx) LoadTpls(tpls map[string]string) error {
+	return c.Core.LoadTpls(tpls)
 }
 
 // View 显示模版
@@ -100,7 +96,15 @@ func (c *Ctx) View(filename string, optionalViewModel ...interface{}) error {
 	if len(optionalViewModel) > 0 {
 		binding = optionalViewModel[0]
 	} else {
-		binding = c.UserValue("viewData")
+		binds := make(map[string]interface{})
+		// 遍历用户变量 注入模版引擎中.
+		c.VisitUserValues(func(k []byte, v interface{}) {
+			binds[getString(k)] = v
+		})
+
+		binding = map[string]interface{}{
+			"data": binds,
+		}
 	}
 
 	err := c.Core.View(c.RequestCtx.Response.BodyWriter(), filename, "", binding)

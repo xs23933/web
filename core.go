@@ -83,6 +83,11 @@ func (c *Core) View(writer io.Writer, filename string, layout string, bind inter
 	return c.ViewEngine.ExecuteWriter(writer, filename, layout, bind)
 }
 
+// LoadTpls 载入数据库中的模版引擎.
+func (c *Core) LoadTpls(tpls map[string]string) error {
+	return c.ViewEngine.LoadTpls(tpls)
+}
+
 func (c *Core) regStatic(prefix, root string, config ...Static) {
 	if prefix == "" {
 		prefix = "/"
