@@ -426,6 +426,11 @@ func (c *Ctx) Body() string {
 
 }
 
+// Hostname host name
+func (c *Ctx) Hostname() string {
+	return getString(c.URI().Host())
+}
+
 // ReadBody 读取body 数据
 func (c *Ctx) ReadBody(out interface{}) error {
 	ctype := getString(c.Request.Header.ContentType())
@@ -451,4 +456,36 @@ func (c *Ctx) ReadBody(out interface{}) error {
 		return schemaDecoderQuery.Decode(out, data)
 	}
 	return fmt.Errorf("ReadBody: can not support content-type:%v", ctype)
+}
+
+// Subdomains 子域名.
+func (c *Ctx) Subdomains(offset ...int) string {
+	o := 2
+
+	if len(offset) > 0 {
+		o = offset[0]
+	}
+
+	subdomains := strings.Split(c.Hostname(), ".")
+
+	l := len(subdomains) - o
+	if l < 0 {
+		l = len(subdomains)
+	}
+
+	return strings.Join(subdomains[:l], ".")
+}
+
+// Domain 返回域名
+// 如果包含基础域名就返回二级域名
+// 反之返回完整域名.
+func (c *Ctx) Domain(bases []string) string {
+	host := c.Hostname()
+	for _, item := range bases {
+		if strings.HasSuffix(host, item) { // 包含了根域名
+			barr := strings.Split(item, ".")
+			return c.Subdomains(len(barr))
+		}
+	}
+	return host
 }

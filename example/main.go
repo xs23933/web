@@ -54,6 +54,22 @@ func (h *Handler) PutParams(ctx *web.Ctx) {
 	ctx.Send("Param? ", ctx.Params("param"))
 }
 
+type Handle struct {
+	web.Handler
+}
+
+func (Handle) Get(c *web.Ctx) {
+	c.ViewData("data", map[string]interface{}{
+		"title": "i love china",
+	})
+
+	fmt.Println(c.Domain([]string{"xs.com.cn"}))
+
+	if err := c.View("default/main.html"); err != nil {
+		c.Send(err)
+	}
+}
+
 // main.go
 func main() {
 	app := web.New(&web.Options{
@@ -63,6 +79,7 @@ func main() {
 	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout.html").Reload(true))
 	// app.Static("/assets", "./assets")
 	app.Use(new(Handler))
+	app.Use(new(Handle))
 	if err := app.Serve(80); err != nil {
 		panic(err)
 	}
