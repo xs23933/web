@@ -216,31 +216,31 @@ func (c *Core) buildHands(hand handle) {
 		m := refCtl.Method(i)
 		name := toNamer(m.Name)
 		switch {
-		case strings.HasPrefix(name, "get"):
+		case strings.HasPrefix(name, "get"): // GET
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
 				name = fixURI(prefix, name, "get")
 				c.pushMethod("GET", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("GET"), name)
 			}
-		case strings.HasPrefix(name, "post"):
+		case strings.HasPrefix(name, "post"): // POST
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
 				name = fixURI(prefix, name, "post")
 				c.pushMethod("POST", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("POST"), name)
 			}
-		case strings.HasPrefix(name, "put"):
+		case strings.HasPrefix(name, "put"): // PUT
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
 				name = fixURI(prefix, name, "put")
 				c.pushMethod("PUT", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("PUT"), name)
 			}
-		case strings.HasPrefix(name, "delete"):
+		case strings.HasPrefix(name, "delete"): // Delete
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
 				name = fixURI(prefix, name, "delete")
 				c.pushMethod("DELETE", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("DELETE"), name)
 			}
-		case strings.HasPrefix(name, "all"):
+		case strings.HasPrefix(name, "all"): // All
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
 				name = fixURI(prefix, name, "all")
 				c.pushMethod("ALL", name, fn)
@@ -404,7 +404,7 @@ func (c *Core) prefork(addr string) (ln net.Listener, err error) {
 	return
 }
 func (c *Core) handler(fctx *fasthttp.RequestCtx) {
-	ctx := acquireCtx(fctx)
+	ctx := assignCtx(fctx)
 	defer releaseCtx(ctx)
 	ctx.Core = c
 	ctx.path = strings.ToLower(ctx.path)

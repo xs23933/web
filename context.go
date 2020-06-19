@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -50,7 +51,7 @@ var (
 	}
 )
 
-func acquireCtx(fctx *fasthttp.RequestCtx) *Ctx {
+func assignCtx(fctx *fasthttp.RequestCtx) *Ctx {
 	ctx := poolCtx.Get().(*Ctx)
 	ctx.index = -1
 	ctx.path = getString(fctx.URI().Path())
@@ -65,6 +66,20 @@ func releaseCtx(ctx *Ctx) {
 	ctx.RequestCtx = nil
 	ctx.err = nil
 	poolCtx.Put(ctx)
+}
+
+// Method contains a string corresponding to the HTTP method of the request: GET, POST, PUT and so on.
+func (ctx *Ctx) Method(override ...string) string {
+	if len(override) > 0 {
+		method := strings.ToUpper(override[0])
+		if methodINT[method] == 0 && method != MethodGet {
+			log.Fatalf("Method: Invalid HTTP method override %s", method)
+		}
+
+		ctx.method = method
+	}
+
+	return ctx.method
 }
 
 // ViewData 全局变量
