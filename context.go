@@ -83,11 +83,6 @@ func (ctx *Ctx) Method(override ...string) string {
 	return ctx.method
 }
 
-// LoadTpls 装载数据库中的模版引擎.
-func (c *Ctx) LoadTpls(tpls map[string]string) error {
-	return c.Core.LoadTpls(tpls)
-}
-
 // View 显示模版
 func (c *Ctx) View(filename string, optionalViewModel ...interface{}) error {
 	c.Set(HeaderContentType, MIMETextHTML)

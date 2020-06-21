@@ -245,6 +245,18 @@ func (c *Core) buildHands(hand handle) {
 				c.pushMethod("DELETE", name, fn)
 				fmt.Printf("| %s\t%s\n", Magenta("DELETE"), name)
 			}
+		case strings.HasPrefix(name, "patch"): // Delete
+			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
+				name = fixURI(prefix, name, "patch")
+				c.pushMethod("PATCH", name, fn)
+				fmt.Printf("| %s\t%s\n", Magenta("PATCH"), name)
+			}
+		case strings.HasPrefix(name, "head"): // Delete
+			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
+				name = fixURI(prefix, name, "head")
+				c.pushMethod("HEAD", name, fn)
+				fmt.Printf("| %s\t%s\n", Magenta("HEAD"), name)
+			}
 		case strings.HasPrefix(name, "all"): // All
 			if fn, ok := (valFn.Method(i).Interface()).(func(*Ctx)); ok {
 				name = fixURI(prefix, name, "all")
