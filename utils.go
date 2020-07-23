@@ -316,7 +316,15 @@ func toNamer(name string) string {
 
 	s := strings.ToLower(buf.String())
 	smap.Set(name, s)
-	reps := []string{"_", "/:", "params", ":param?", "param", ":param"}
+
+	reps := []string{
+		"param4", ":param4",
+		"param3", ":param3",
+		"param2", ":param2",
+		"params", ":param?",
+		"param", ":param",
+	}
+
 	replacer := strings.NewReplacer(reps...)
 	s = replacer.Replace(s)
 	return s

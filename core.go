@@ -279,6 +279,11 @@ func (c *Core) pushMethod(method, path string, handlers ...func(*Ctx)) {
 	if path == "" {
 		path = "/"
 	}
+
+	if path[0] != '/' {
+		path = "/" + path
+	}
+
 	original := path
 	path = strings.ToLower(path)
 	if len(path) > 1 {
