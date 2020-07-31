@@ -20,7 +20,8 @@ type Route struct {
 	Params []string       // path params
 	Regexp *regexp.Regexp // regexp matcher
 
-	Handler func(*Ctx) // ctx handler
+	Handler  func(*Ctx) // ctx handler
+	Handlers []Handler  `json:"-"` // Ctx handlers
 
 }
 

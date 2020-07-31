@@ -214,8 +214,22 @@ func (c *Ctx) Next(err ...error) {
 	c.values = nil
 	if len(err) > 0 {
 		c.err = err[0]
+		return
 	}
 	c.nextRoute(c)
+}
+
+// Router returns the matched Route struct.
+func (c *Ctx) Router() *Route {
+	if c.Route == nil {
+		// Fallback for fasthttp error handler
+		return &Route{
+			Path:     c.path,
+			Method:   c.method,
+			Handlers: make([]Handler, 0),
+		}
+	}
+	return c.Route
 }
 
 // Fresh When the response is still “fresh” in the client’s cache true is returned,

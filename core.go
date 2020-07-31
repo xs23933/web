@@ -348,6 +348,25 @@ func (c *Core) Build() error {
 	return nil
 }
 
+// Error http Error.
+type Error struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e *Error) Error() string {
+	return e.Message
+}
+
+// NewError NewError.
+func NewError(code int, message ...string) *Error {
+	e := &Error{code, statusMessages[code]}
+	if len(message) > 0 {
+		e.Message = message[0]
+	}
+	return e
+}
+
 // Serve 启动
 func (c *Core) Serve(address interface{}, tlsopt ...*tls.Config) error {
 	addr, ok := address.(string)

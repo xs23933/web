@@ -6,6 +6,7 @@ import (
 	"hash/crc32"
 	"os"
 	"path"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -772,4 +773,24 @@ func White(msg string) string {
 
 func SetColor(msg string, conf, bg, text int) string {
 	return fmt.Sprintf("%c[%d;%d;%dm%s%c[0m", 0x1B, conf, bg, text, msg, 0x1B)
+}
+
+// GetString returns a string pointer without allocation
+func GetString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+// ImmutableString returns a immutable string with allocation
+func ImmutableString(s string) string {
+	return string(GetBytes(s))
+}
+
+// GetBytes returns a byte pointer without allocation
+func GetBytes(s string) (bs []byte) {
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	bh.Data = sh.Data
+	bh.Len = sh.Len
+	bh.Cap = sh.Len
+	return
 }
