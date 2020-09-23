@@ -97,9 +97,7 @@ func (c *Ctx) View(filename string, optionalViewModel ...interface{}) error {
 			binds[getString(k)] = v
 		})
 
-		binding = map[string]interface{}{
-			"data": binds,
-		}
+		binding = binds
 	}
 
 	err := c.Core.View(c.RequestCtx.Response.BodyWriter(), filename, "", binding)

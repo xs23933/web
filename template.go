@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,7 @@ type HandlebarsEngine struct {
 	assetFn       func(name string) ([]byte, error) // for embedded, in combination with directory & extension
 	namesFn       func() []string                   // for embedded, in combination with directory & extension
 	reload        bool
+	debug         bool
 	layout        string
 	rmu           sync.RWMutex
 	helpers       map[string]interface{}
@@ -74,6 +76,12 @@ func (s *HandlebarsEngine) Binary(assetFn func(name string) ([]byte, error), nam
 // It's good to be used side by side with the https://github.com/kataras/rizla reloader for go source files.
 func (s *HandlebarsEngine) Reload(devMode bool) *HandlebarsEngine {
 	s.reload = devMode
+	return s
+}
+
+// Debug use debug model
+func (s *HandlebarsEngine) Debug(dev bool) *HandlebarsEngine {
+	s.debug = dev
 	return s
 }
 
@@ -144,26 +152,36 @@ func (s *HandlebarsEngine) loadDirectory() error {
 		if info == nil || info.IsDir() {
 			return nil
 		}
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-		ext := filepath.Ext(rel)
+
+		ext := filepath.Ext(path)
 		if ext == extension {
+
+			rel, err := filepath.Rel(dir, path)
+			if err != nil {
+				return err
+			}
+
 			buf, err := ioutil.ReadFile(path)
 			contents := string(buf)
 			if err != nil {
 				templateErr = err
 				return err
 			}
+
 			name := filepath.ToSlash(rel)
+			// Remove ext from name 'index.tmpl' -> 'index'
+			name = strings.TrimSuffix(name, extension)
 
 			tmpl, err := raymond.Parse(contents)
 			if err != nil {
 				templateErr = err
 				return err
 			}
+
 			s.templateCache[name] = tmpl
+			if s.debug {
+				log.Printf("views: parsed template: %s\n", name)
+			}
 		}
 		return nil
 	})
@@ -262,7 +280,6 @@ func (s *HandlebarsEngine) ExecuteWriter(w io.Writer, filename string, layout st
 			} else {
 				return fmt.Errorf("Please provide a map[string]interface{} type as the binding instead of the %#v", binding)
 			}
-
 			contents, err := s.executeTemplateBuf(filename, binding)
 			if err != nil {
 				return err
@@ -270,7 +287,6 @@ func (s *HandlebarsEngine) ExecuteWriter(w io.Writer, filename string, layout st
 			if context == nil {
 				context = make(map[string]interface{}, 1)
 			}
-
 			context["yield"] = raymond.SafeString(contents)
 		}
 

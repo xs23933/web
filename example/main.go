@@ -22,7 +22,7 @@ func (h *Handler) Init() {
 func (h *Handler) Get(ctx *web.Ctx) {
 	ctx.Vars("title", "i love china.")
 
-	if err := ctx.View("default/main.html"); err != nil {
+	if err := ctx.View("default/main"); err != nil {
 		ctx.Send(err)
 	}
 }
@@ -61,7 +61,7 @@ func (Handle) Get(c *web.Ctx) {
 
 	fmt.Println(c.Domain([]string{"xs.com.cn"}))
 
-	if err := c.View("default/main.html"); err != nil {
+	if err := c.View("default/main"); err != nil {
 		c.Send(err)
 	}
 }
@@ -72,7 +72,7 @@ func main() {
 		Debug: true,
 	})
 
-	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout.html").Reload(true))
+	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout").Reload(true).Debug(true))
 	// app.Static("/assets", "./assets")
 	app.Use(new(Handler))
 	app.Use(new(Handle))

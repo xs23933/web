@@ -3,15 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{data.title}}</title>
-    {{ render "shared/head.html" data }}
+    <title>{{title}}</title>
+    {{ render "shared/head" . }}
 </head>
 <body>
-{{render "shared/header.html"}}
+{{render "shared/header" .}}
 <div>
-    {{yield}} yield
+    {{yield}} 
     <hr />
 </div>
-{{render "shared/footer.html" data}}
+{{render "shared/footer" .}}
 </body>
 </html>
