@@ -11,6 +11,10 @@
 <div>
     {{yield}} 
     <hr />
+
+    {{#if title}}
+     have title
+    {{/if}}
 </div>
 {{render "shared/footer" .}}
 </body>

@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/xs23933/web"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 //Handler .go
@@ -68,11 +71,36 @@ func (Handle) Get(c *web.Ctx) {
 
 // main.go
 func main() {
+	view := web.Handlebars("./views", ".html").Layout("shared/layout").Reload(true).Debug(true)
+	view.AddFunc("greet", func(name string) string {
+		return "Hello, " + name + "!"
+	})
+
+	view.AddFunc("currency", func(name interface{}, l interface{}) interface{} {
+		src := 0.0
+		switch name.(type) {
+		case string:
+			src, _ = strconv.ParseFloat(name.(string), 64)
+		case int:
+			src = float64(name.(int))
+		case float64:
+			src = name.(float64)
+		default:
+			return name
+		}
+		p := message.NewPrinter(language.English)
+		ext := 2
+		if lens, ok := l.(int); ok {
+			ext = lens
+		}
+		symbol := fmt.Sprintf("%%.%df", ext)
+		return p.Sprintf(symbol, src)
+	})
 	app := web.New(&web.Options{
 		Debug: true,
 	})
 
-	app.RegView(web.Handlebars("./views", ".html").Layout("shared/layout").Reload(true).Debug(true))
+	app.RegView(view)
 	// app.Static("/assets", "./assets")
 	app.Use(new(Handler))
 	app.Use(new(Handle))
