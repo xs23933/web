@@ -53,6 +53,17 @@ func Handlebars(directory, ext string) *HandlebarsEngine {
 	return s
 }
 
+// RegisterRender register custom method
+func (s *HandlebarsEngine) RegisterRender(funcName string) {
+	raymond.RegisterHelper(funcName, func(partial string, bind interface{}) raymond.SafeString {
+		contents, err := s.executeTemplateBuf(fmt.Sprintf("%ss/%s", funcName, partial), bind)
+		if err != nil {
+			return raymond.SafeString("template with name: " + partial + " couldn't not be found.")
+		}
+		return raymond.SafeString(contents)
+	})
+}
+
 // Ext returns the file extension which this view engine is responsible to render.
 func (s *HandlebarsEngine) Ext() string {
 	return s.ext
