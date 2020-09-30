@@ -5,12 +5,132 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 )
+
+// walk recursively in "fs" descends "root" path, calling "walkFn".
+func walk(fs http.FileSystem, root string, walkFn filepath.WalkFunc) error {
+	names, err := assetNames(fs, root)
+	if err != nil {
+		return fmt.Errorf("%s: %w", root, err)
+	}
+
+	for _, name := range names {
+		fullpath := path.Join(root, name)
+		f, err := fs.Open(fullpath)
+		if err != nil {
+			return fmt.Errorf("%s: %w", fullpath, err)
+		}
+		stat, err := f.Stat()
+		err = walkFn(fullpath, stat, err)
+		if err != nil {
+			if err != filepath.SkipDir {
+				return fmt.Errorf("%s: %w", fullpath, err)
+			}
+
+			continue
+		}
+
+		if stat.IsDir() {
+			if err := walk(fs, fullpath, walkFn); err != nil {
+				return fmt.Errorf("%s: %w", fullpath, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// assetNames returns the first-level directories and file, sorted, names.
+func assetNames(fs http.FileSystem, name string) ([]string, error) {
+	f, err := fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if f == nil {
+		return nil, nil
+	}
+
+	infos, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	names := make([]string, 0, len(infos))
+	for _, info := range infos {
+		// note: go-bindata fs returns full names whether
+		// the http.Dir returns the base part, so
+		// we only work with their base names.
+		name := filepath.ToSlash(info.Name())
+		name = path.Base(name)
+
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+	return names, nil
+}
+
+func asset(fs http.FileSystem, name string) ([]byte, error) {
+	f, err := fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	contents, err := ioutil.ReadAll(f)
+	f.Close()
+	return contents, err
+}
+
+func getFS(fsOrDir interface{}) (fs http.FileSystem) {
+	if fsOrDir == nil {
+		return noOpFS{}
+	}
+
+	switch v := fsOrDir.(type) {
+	case string:
+		if v == "" {
+			fs = noOpFS{}
+		} else {
+			fs = httpDirWrapper{http.Dir(v)}
+		}
+	case http.FileSystem:
+		fs = v
+	default:
+		panic(fmt.Errorf(`unexpected "fsOrDir" argument type of %T (string or http.FileSystem)`, v))
+	}
+
+	return
+}
+
+type noOpFS struct{}
+
+func (fs noOpFS) Open(name string) (http.File, error) { return nil, nil }
+
+func isNoOpFS(fs http.FileSystem) bool {
+	_, ok := fs.(noOpFS)
+	return ok
+}
+
+// fixes: "invalid character in file path"
+// on amber engine (it uses the virtual fs directly
+// and it uses filepath instead of the path package...).
+type httpDirWrapper struct {
+	http.Dir
+}
+
+func (fs httpDirWrapper) Open(name string) (http.File, error) {
+	return fs.Dir.Open(filepath.ToSlash(name))
+}
 
 // HTMLEngine contains the html view engine structure.
 type HTMLEngine struct {
@@ -24,6 +144,7 @@ type HTMLEngine struct {
 	reload bool
 	// parser configuration
 	options     []string // (text) template options
+	pageDir     string
 	left        string
 	right       string
 	layout      string
@@ -44,16 +165,16 @@ type customTmp struct {
 	funcs    template.FuncMap
 }
 
-var (
-	_ Engine       = (*HTMLEngine)(nil)
-	_ EngineFuncer = (*HTMLEngine)(nil)
-)
+// var (
+// 	_ Engine       = (*HTMLEngine)(nil)
+// 	_ EngineFuncer = (*HTMLEngine)(nil)
+// )
 
 var emptyFuncs = template.FuncMap{
 	"yield": func(binding interface{}) (string, error) {
 		return "", fmt.Errorf("yield was called, yet no layout defined")
 	},
-	"part": func() (string, error) {
+	"section": func() (string, error) {
 		return "", fmt.Errorf("block was called, yet no layout defined")
 	},
 	"partial": func() (string, error) {
@@ -63,6 +184,9 @@ var emptyFuncs = template.FuncMap{
 		return "", fmt.Errorf("block was called, yet no layout defined")
 	},
 	"current": func() (string, error) {
+		return "", nil
+	},
+	"html": func() (string, error) {
 		return "", nil
 	},
 	"render": func() (string, error) {
@@ -87,6 +211,7 @@ func HTML(fs interface{}, extension string) *HTMLEngine {
 		reload:      false,
 		left:        "{{",
 		right:       "}}",
+		pageDir:     "",
 		layout:      "",
 		layoutFuncs: make(template.FuncMap),
 		funcs:       make(template.FuncMap),
@@ -116,6 +241,12 @@ func (s *HTMLEngine) Ext() string {
 // It's good to be used side by side with the https://github.com/kataras/rizla reloader for go source files.
 func (s *HTMLEngine) Reload(developmentMode bool) *HTMLEngine {
 	s.reload = developmentMode
+	return s
+}
+
+// PageDir PageDir
+func (s *HTMLEngine) PageDir(path string) *HTMLEngine {
+	s.pageDir = path
 	return s
 }
 
@@ -228,7 +359,7 @@ func (s *HTMLEngine) Load() error {
 	return s.load()
 }
 
-func (s *HandlebarsEngine) LoadTpls(tpls map[string]string) error {
+func (s *HTMLEngine) LoadTpls(tpls map[string]string) error {
 	return nil
 }
 
@@ -345,9 +476,12 @@ func (s *HTMLEngine) layoutFuncsFor(lt *template.Template, name string, binding 
 
 func (s *HTMLEngine) runtimeFuncsFor(t *template.Template, name string, binding interface{}) {
 	funcs := template.FuncMap{
-		"part": func(partName string) (template.HTML, error) {
-			nameTemp := strings.Replace(name, s.extension, "", -1)
-			fullPartName := fmt.Sprintf("%s-%s", nameTemp, partName)
+		"section": func(partName string, bind ...interface{}) (template.HTML, error) {
+			// nameTemp := strings.Replace(name, s.extension, "", -1)
+			fullPartName := fmt.Sprintf("sections/%s%s", partName, s.extension)
+			if len(bind) > 0 {
+				binding = bind[0]
+			}
 			buf, err := s.executeTemplateBuf(fullPartName, binding)
 			if err != nil {
 				return "", nil
@@ -356,6 +490,9 @@ func (s *HTMLEngine) runtimeFuncsFor(t *template.Template, name string, binding 
 		},
 		"current": func() (string, error) {
 			return name, nil
+		},
+		"html": func(src string) (template.HTML, error) {
+			return template.HTML(src), nil
 		},
 		"partial": func(partialName string) (template.HTML, error) {
 			fullPartialName := fmt.Sprintf("%s-%s", partialName, name)
@@ -404,16 +541,20 @@ func (s *HTMLEngine) ExecuteWriter(w io.Writer, name, layout string, bindingData
 		}
 	}
 
+	if len(s.pageDir) > 0 {
+		name = fmt.Sprintf("%s/%s%s", s.pageDir, name, s.extension)
+	}
+
 	t := s.Templates.Lookup(name)
 	if t == nil {
-		return ErrNotExist{name, false}
+		return fmt.Errorf("the %s not exist", name)
 	}
 	s.runtimeFuncsFor(t, name, bindingData)
 
 	if layout = getLayout(layout, s.layout); layout != "" {
-		lt := s.Templates.Lookup(layout)
+		lt := s.Templates.Lookup(layout + s.extension)
 		if lt == nil {
-			return ErrNotExist{name, true}
+			return fmt.Errorf("%s not exist", name)
 		}
 
 		s.layoutFuncsFor(lt, name, bindingData)
