@@ -551,6 +551,9 @@ func (s *HTMLEngine) ExecuteWriter(w io.Writer, name, layout string, bindingData
 	}
 	s.runtimeFuncsFor(t, name, bindingData)
 
+	if layout == "nolayout" {
+		return t.Execute(w, bindingData)
+	}
 	if layout = getLayout(layout, s.layout); layout != "" {
 		lt := s.Templates.Lookup(layout + s.extension)
 		if lt == nil {

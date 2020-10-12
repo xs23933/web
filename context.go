@@ -107,6 +107,30 @@ func (c *Ctx) View(filename string, optionalViewModel ...interface{}) error {
 	return err
 }
 
+// Render 直接渲染不渲染 layout
+func (c *Ctx) Render(filename string, optionalViewModel ...interface{}) error {
+	c.Set(HeaderContentType, MIMETextHTML)
+
+	var binding interface{}
+	if len(optionalViewModel) > 0 {
+		binding = optionalViewModel[0]
+	} else {
+		binds := make(map[string]interface{})
+		// 遍历用户变量 注入模版引擎中.
+		c.VisitUserValues(func(k []byte, v interface{}) {
+			binds[getString(k)] = v
+		})
+
+		binding = binds
+	}
+
+	err := c.Core.View(c.RequestCtx.Response.BodyWriter(), filename, "nolayout", binding)
+	if err != nil {
+		c.SendStatus(500)
+	}
+	return err
+}
+
 // Vars 本地数据
 func (c *Ctx) Vars(k string, v ...interface{}) (val interface{}) {
 	if len(v) == 0 { // read
@@ -499,4 +523,18 @@ func (c *Ctx) Domain(bases []string) string {
 		}
 	}
 	return host
+}
+
+// RootDomain 获取主域名 默认2位
+func (c *Ctx) RootDomain(offset ...int) string {
+	o := 2
+	if len(offset) > 0 {
+		o = offset[0]
+	}
+	subdomains := strings.Split(c.Hostname(), ".")
+	l := len(subdomains) - o
+	if l < 0 {
+		l = 0
+	}
+	return strings.Join(subdomains[l:], ".")
 }
