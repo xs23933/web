@@ -229,6 +229,8 @@ func (c *Core) Get(args ...interface{}) *Core {
 	}
 
 	c.pushMethod("GET", path, handlers...)
+	fmt.Printf("| %s\t%s\n", Magenta("GET"), path)
+
 	return c
 }
 
