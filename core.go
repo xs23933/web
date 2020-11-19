@@ -206,6 +206,32 @@ func (c *Core) Use(args ...interface{}) *Core {
 	return c
 }
 
+// Get registers a middleware route.
+func (c *Core) Get(args ...interface{}) *Core {
+	path := ""
+	var handlers []func(*Ctx)
+	skip := false // 不需要综合注册
+	for i := 0; i < len(args); i++ {
+		switch arg := args[i].(type) {
+		case string:
+			path = arg
+		case func(*Ctx):
+			handlers = append(handlers, arg)
+		case handle:
+			skip = true
+			c.buildHands(arg)
+		default:
+			log.Fatalf("Use not support %v\n", arg)
+		}
+	}
+	if skip {
+		return c
+	}
+
+	c.pushMethod("GET", path, handlers...)
+	return c
+}
+
 func (c *Core) buildHands(hand handle) {
 	hand.Init()
 
