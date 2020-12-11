@@ -323,6 +323,10 @@ func (c *Ctx) IP() string {
 	if ip != "" {
 		return ip
 	}
+	ip = strings.Join(c.IPs(), ",")
+	if ip != "" {
+		return ip
+	}
 	return c.RemoteIP().String()
 }
 
