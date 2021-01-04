@@ -324,6 +324,7 @@ func toNamer(name string) string {
 		"param2", ":param2",
 		"params", ":param?",
 		"param", ":param",
+		"_", ".",
 	}
 
 	replacer := strings.NewReplacer(reps...)
